@@ -16,7 +16,7 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
             "http://localhost:5173",
-            "https://github.com/RicardoL-2026"
+            "https://ricardol-2026.github.io/ChatBot-Frontend/"
         )
         .AllowAnyHeader()
         .AllowAnyMethod();
