@@ -6,6 +6,7 @@ using Backend_ChatBot.Models.Request.Resume;
 using Backend_ChatBot.Models.Response;
 using Backend_ChatBot.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -37,7 +38,22 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Add services to the container.
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Servers =
+        [
+            new OpenApiServer
+            {
+                Url = builder.Configuration["APP_URL"]
+            }
+        ];
+
+        return Task.CompletedTask;
+    });
+});
+
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 
@@ -62,7 +78,17 @@ builder.Services.AddScoped<ResumeTextExtractorService>();
 builder.Services.AddHttpClient<GeminiService>();
 
 var app = builder.Build();
+app.MapOpenApi();
+
+app.MapScalarApiReference(options =>
+{
+    options.WithOpenApiRoutePattern("/openapi/v1.json");
+});
+
 app.MapGet("/", () => "ChatBot Backend is running");
+
+
+
 
 app.UseCors("FrontendPolicy");
 
