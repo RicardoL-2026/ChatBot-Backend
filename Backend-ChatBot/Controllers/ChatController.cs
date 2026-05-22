@@ -5,6 +5,7 @@ using Backend_ChatBot.Models.Request.Message;
 using Backend_ChatBot.Models.Response;
 using Backend_ChatBot.Services;
 using Microsoft.AspNetCore.Mvc;
+using Backend_ChatBot.Exceptions;
 
 namespace Backend_ChatBot.Controllers
 {
@@ -22,7 +23,7 @@ namespace Backend_ChatBot.Controllers
             _chatService = chatService; 
         }
 
-        [HttpPost]
+        [HttpPost("ask")]
         [ProducesResponseType(typeof(ApiResponse<ChatResponseDTO>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
@@ -57,11 +58,76 @@ namespace Backend_ChatBot.Controllers
                     )
                 );
             }
+            catch (AiServiceUnavailableException ex)
+            {
+                var errorResponse = ApiResponse<object>.Error(
+                    503,
+                    ex.Message,
+                    ex.Message
+                );
+
+                return StatusCode(503, errorResponse);
+            }
             catch (Exception ex)
             {
                 var errorResponse = ApiResponse<object>.Error(
                     500,
-                    $"An error occurred while creating the Message: {ex.Message}",
+                    "Ocurrió un error inesperado al procesar la respuesta de IA.",
+                    ex.Message
+                );
+
+                return StatusCode(500, errorResponse);
+            }
+        }
+
+        // Se selecciona un ID de un mensaje y se ejecuta de nuevo sin guardar un mensaje repetido
+        [HttpPost("ask-replay")]
+        [ProducesResponseType(typeof(ApiResponse<ChatResponseDTO>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<ApiResponse<ChatResponseDTO>>> HistoryAsk(MessageCreateDTO messageDTO)
+        {
+            try
+            {
+                if (messageDTO == null)
+                    return BadRequest(ApiResponse<object>.BadRequest("Message data is required"));
+
+                var userMessage = _mapper.Map<Message>(messageDTO);
+                userMessage.Type = "Request";
+                userMessage.CreatedAt = DateTime.UtcNow;
+
+                var answer = await _chatService.AskAsync(messageDTO.Messa);
+
+                var chatResponse = new ChatResponseDTO
+                {
+                    Question = _mapper.Map<MessageDTO>(userMessage),
+                    Answer = answer
+                };
+
+                return CreatedAtAction(
+                    nameof(Ask),
+                    new { id = userMessage.Id },
+                    ApiResponse<ChatResponseDTO>.CreatedAt(
+                        chatResponse,
+                        "AI response generated successfully"
+                    )
+                );
+            }
+            catch (AiServiceUnavailableException ex)
+            {
+                var errorResponse = ApiResponse<object>.Error(
+                    503,
+                    ex.Message,
+                    ex.Message
+                );
+
+                return StatusCode(503, errorResponse);
+            }
+            catch (Exception ex)
+            {
+                var errorResponse = ApiResponse<object>.Error(
+                    500,
+                    "Ocurrió un error inesperado al procesar la respuesta de IA.",
                     ex.Message
                 );
 
