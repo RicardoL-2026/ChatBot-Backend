@@ -79,18 +79,24 @@ builder.Services.AddHttpClient<GeminiService>();
 
 var app = builder.Build();
 app.MapGet("/", () => "ChatBot Backend is running");
-app.MapOpenApi();
 
-app.MapScalarApiReference(options =>
+
+if (app.Environment.IsDevelopment())
 {
-    options.WithOpenApiRoutePattern("/openapi/v1.json");
-});
+    app.MapOpenApi();
+
+    app.MapScalarApiReference(options =>
+    {
+        options.WithOpenApiRoutePattern("/openapi/v1.json");
+    });
+}
 
 app.UseCors("FrontendPolicy");
 
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
 
 app.MapControllers();
 
