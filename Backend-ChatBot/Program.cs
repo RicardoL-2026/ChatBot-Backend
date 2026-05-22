@@ -14,9 +14,12 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:5173")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        policy.WithOrigins(
+            "http://localhost:5173",
+            "https://github.com/RicardoL-2026"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod();
     });
 });
 
@@ -55,6 +58,8 @@ builder.Services.AddHttpClient<GeminiService>();
 
 var app = builder.Build();
 
+
+
 app.UseCors("FrontendPolicy");
 
 // Configure the HTTP request pipeline.
@@ -70,5 +75,12 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    db.Database.Migrate();
+}
 
 app.Run();
