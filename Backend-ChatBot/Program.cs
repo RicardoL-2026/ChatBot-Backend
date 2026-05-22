@@ -78,6 +78,7 @@ builder.Services.AddScoped<ResumeTextExtractorService>();
 builder.Services.AddHttpClient<GeminiService>();
 
 var app = builder.Build();
+app.MapGet("/", () => "ChatBot Backend is running");
 app.MapOpenApi();
 
 app.MapScalarApiReference(options =>
@@ -85,20 +86,7 @@ app.MapScalarApiReference(options =>
     options.WithOpenApiRoutePattern("/openapi/v1.json");
 });
 
-app.MapGet("/", () => "ChatBot Backend is running");
-
-
-
-
 app.UseCors("FrontendPolicy");
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
-{
-    app.MapOpenApi();
-    // redicters to "/scalar" endpoint.
-    app.MapScalarApiReference();
-}
 
 app.UseHttpsRedirection();
 
